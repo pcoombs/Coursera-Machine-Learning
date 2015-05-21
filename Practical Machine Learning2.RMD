@@ -1,0 +1,78 @@
+---
+title: "Practical Machine Learning Project"
+author: "Phil Coombs"
+output: html_document
+---
+
+##Background
+Using devices such as Jawbone UP, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively.  These type of devices are part of the quantified self movement - a group of enthsiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks.  One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it.  In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.  They were asked to perofm barbell lifts correctly and incorrectly in 5 different ways.  More inormation is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+##Installing the required R packages:
+install.packages("caret",dependencies=TRUE)
+install.packages("randomForest")
+
+##Loading the required R packages and data:
+
+```{r chunk1, echo=TRUE}
+library(caret)
+library(randomForest)
+set.seed(1234)
+train <- read.csv("pml-training.csv",na.strings=c("NA","#DIV/0!"," "))
+test <- read.csv("pml-testing.csv",na.strings=c("NA","DIV/0!", " "))
+head(train)
+head(test)
+```
+
+#Delete irrevelant columns and columns with missing data:
+
+```{r chunk2, echo=TRUE}
+train <- train[,colSums(is.na(train))==0]
+test <- test[,colSums(is.na(test))==0]
+train <- train [,-c(1:7)]
+test <- test [,-c(1:7)]
+head(train)
+head(test)
+
+```
+
+#Partition the training set into two:
+
+```{r chunk3, echo=TRUE}
+sub <- createDataPartition(y=train$classe, p=0.6,list=FALSE)
+subtrain <- train[sub,]
+subtest <- train [-sub,]
+dim(subtrain)
+dim(subtest)
+head(subtrain)
+head(subtest)
+```
+
+#Prediction Model:
+```{r chunk4, echo=TRUE }
+model <- train(subtrain$classe ~., data=subtrain, method = "rf", prox = TRUE, trControl = trainControl(method = "cv",number=4))
+print(model)
+
+Prediction <- predict(model, subtest)
+confusionMatrix(Prediction,subtest$classe)
+```
+
+#Submission:
+```{r chunk5, echo=TRUE}
+answers <- predict(model, test)
+answers <- as.character(answers)
+answers
+
+pml_write_files = function(x) {
+  n = length(x)
+  for (i in 1:n) {
+    filename=paste0 ("problem_id_",i, ".txt")
+    write.table(x[i], file = filename, quote = FALSE, row.names = FALSE, col.names = FALSE)
+  }
+}
+pml_write_files(answers)
+
+```
+
+
+
+
